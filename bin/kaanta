@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+require 'pathname'
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../../Gemfile",
+  Pathname.new(__FILE__).realpath)
+
+require 'bundler/setup'
+require 'optparse'
+require 'kaanta'
+
+Kaanta::Config.host = "0.0.0.0"
+Kaanta::Config.port = "8080"
+Kaanta::Config.daemonize = false
+Kaanta::Config.workers = 3
+Kaanta::Config.timeout = 30
+
+opts = OptionParser.new do |opts|
+  opts.banner = "Usage: kaanta [options]"
+
+  opts.on("-o", "--host HOST", "listen on HOST (default: 0.0.0.0)") { |host|
+    Kaanta::Config.host = host
+  }
+
+  opts.on("-p", "--port PORT", "use PORT (default: 8080)") { |port|
+    Kaanta::Config.port = port
+  }
+
+ opts.on("-D", "--daemonize", "run daemonized in the background (default: false)") { |daemonize|
+    Kaanta::Config.daemonize = true
+  }
+
+  opts.on("-w", "--workers COUNT", "Number of workers to spawn (default: 3)") { |count|
+    Kaanta::Config.workers = workers.to_i
+  }
+
+  opts.on("-t", "--timeout SECONDS", "MAX SECONDS worker can spend processing a request before being reaped (default: 30)") { |timeout|
+    Kaanta::Config.timeout = timeout.to_i
+  }
+
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    abort
+  end
+
+  opts.on_tail("-v", "--version", "Show version") do
+    puts Kaanta::VERSION
+    exit
+  end
+end
+opts.parse!(ARGV)
+
+if Kaanta::Config.daemonize
+  $stdin.reopen("/dev/null")
+  exit if fork
+  Process.setsid
+  exit if fork
+end
+
+Kaanta::Master.new.start
