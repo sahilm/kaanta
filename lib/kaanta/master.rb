@@ -3,7 +3,7 @@ module Kaanta
   class Master
     def initialize
       @rpipe, @wpipe  = IO.pipe
-      @worker_pids    = []
+      @workers        = {}
       @sig_queue      = []
     end
 
@@ -53,15 +53,17 @@ module Kaanta
     end
 
     def spawn_workers
-      to_spawn = Config.workers - @worker_pids.size
+      to_spawn = Config.workers - @workers.size
       return if to_spawn <= 0
-      while @worker_pids.size < to_spawn do
+      while @workers.size < to_spawn do
         tempfile = Tempfile.new('')
         tempfile.unlink
         tempfile.sync = true
         master_pid = Process.pid
-        @worker_pids << fork do
-          Kaanta::Worker.new(master_pid, @socket, @wpipe, tempfile, logger).start
+        worker_number = @workers.size
+        @workers[worker_number] = fork do
+          Kaanta::Worker.new(master_pid, @socket, @wpipe,
+                             tempfile, worker_number,logger).start
         end
       end
     end
@@ -76,7 +78,7 @@ module Kaanta
     def setup_logging
       logger.datetime_format = "%Y-%m-%d %H:%M:%S"
       logger.formatter = proc do |severity, datetime, progname, msg|
-        "[#{$PROGRAM_NAME}] #{datetime}: #{severity} -- #{msg}\n"
+        "[#{$PROGRAM_NAME} - #{Process.pid}] #{datetime}: #{severity} -- #{msg}\n"
       end
     end
 
