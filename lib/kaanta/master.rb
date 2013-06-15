@@ -1,6 +1,8 @@
 module Kaanta
 
   class Master
+    QUEUE_SIGS = %w(QUIT INT TERM HUP).map { |x| x.freeze }.freeze
+
     def initialize
       @rpipe, @wpipe  = IO.pipe
       @workers        = {}
@@ -9,6 +11,7 @@ module Kaanta
 
     def start
       $PROGRAM_NAME = "kaanta master"
+      @master_pid = Process.pid
       $stderr.sync = $stdout.sync = true
       setup_logging
       @socket = TCPServer.open(Config.host, Config.port)
@@ -38,7 +41,6 @@ module Kaanta
       stop
     end
 
-    QUEUE_SIGS = %w(QUIT INT TERM HUP).map { |x| x.freeze }.freeze
 
     private
 
@@ -47,23 +49,32 @@ module Kaanta
     end
 
     def reap_workers
+      loop do
+        pid, status = Process.waitpid2(-1, Process::WNOHANG)
+        break unless pid
+        worker = @workers.delete(pid)
+        worker.tempfile.close rescue nil
+        logger.info "reaped worker #{worker.number} " \
+                    "(PID:#{pid})"
+      end
+    rescue Errno::ECHILD
     end
 
     def kill_runaway_workers
     end
 
     def spawn_workers
-      to_spawn = Config.workers - @workers.size
-      return if to_spawn <= 0
-      while @workers.size < to_spawn do
+      worker_number = -1
+      until (worker_number += 1) == Config.workers
+        @workers.value?(worker_number) && next
         tempfile = Tempfile.new('')
         tempfile.unlink
         tempfile.sync = true
-        master_pid = Process.pid
-        worker_number = @workers.size
-        @workers[worker_number] = fork do
-          Kaanta::Worker.new(master_pid, @socket, @wpipe,
-                             tempfile, worker_number,logger).start
+        worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number,logger)
+        if pid = fork
+          @workers[pid] = worker
+        else
+          worker.start
         end
       end
     end
@@ -78,7 +89,7 @@ module Kaanta
     def setup_logging
       logger.datetime_format = "%Y-%m-%d %H:%M:%S"
       logger.formatter = proc do |severity, datetime, progname, msg|
-        "[#{$PROGRAM_NAME} - #{Process.pid}] #{datetime}: #{severity} -- #{msg}\n"
+        "[#{$PROGRAM_NAME} (PID: #{Process.pid})] #{datetime}: #{severity} -- #{msg}\n"
       end
     end
 

@@ -1,16 +1,21 @@
 module Kaanta
   class Worker
-    def initialize(master_pid, socket, wpipe, tempfile, worker_number,logger)
-      @master_pid    = master_pid
-      @socket        = socket
-      @tempfile      = tempfile
-      @wpipe         = wpipe
-      @worker_number = worker_number
-      @logger        = logger
+    attr_reader :number, :tempfile
+
+    def initialize(master_pid, socket, tempfile, number,logger)
+      @master_pid = master_pid
+      @socket     = socket
+      @tempfile   = tempfile
+      @number     = number
+      @logger     = logger
+    end
+
+    def ==(other_number)
+      self.number == other_number
     end
 
     def start
-      $PROGRAM_NAME = "kaanta worker #{@worker_number}"
+      $PROGRAM_NAME = "kaanta worker #{number}"
       Kaanta::Master::QUEUE_SIGS.each { |sig| trap(sig, 'IGNORE') }
       trap('CHLD', 'DEFAULT')
       alive = true
@@ -22,7 +27,7 @@ module Kaanta
       i = 0
       logger.info("up")
       while alive && @master_pid == Process.ppid do
-        @tempfile.chmod(i += 1)
+        tempfile.chmod(i += 1)
 
         begin
           client = @socket.accept_nonblock
@@ -31,7 +36,7 @@ module Kaanta
           client.close
         rescue Errno::EAGAIN
         end
-        @tempfile.chmod(i += 1)
+        tempfile.chmod(i += 1)
         ret = IO.select([@socket], nil, nil, Config.timeout / 2) or next
       end
     end
