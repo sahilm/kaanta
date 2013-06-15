@@ -8,6 +8,7 @@ module Kaanta
     end
 
     def start
+      $PROGRAM_NAME = "kaanta master"
       $stderr.sync = $stdout.sync = true
       setup_logging
       @socket = TCPServer.open(Config.host, Config.port)
@@ -15,7 +16,6 @@ module Kaanta
       spawn_workers
       QUEUE_SIGS.each { |sig| trap_deferred(sig) }
       trap('CHLD') { @wpipe.write_nonblock(".") }
-      $PROGRAM_NAME = "kaanta master"
 
       loop do
         reap_workers
