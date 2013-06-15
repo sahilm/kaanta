@@ -74,6 +74,8 @@ module Kaanta
         if pid = fork
           @workers[pid] = worker
         else
+          @wpipe.close
+          @rpipe.close
           worker.start
         end
       end
