@@ -26,18 +26,23 @@ module Kaanta
       end
       i = 0
       logger.info("up")
+      ret = nil
       while alive && @master_pid == Process.ppid do
         tempfile.chmod(i += 1)
 
-        begin
-          client = @socket.accept_nonblock
-          data = client.gets
-          logger.info(data)
-          client.close
-        rescue Errno::EAGAIN
+        if ret
+          begin
+            client = @socket.accept_nonblock
+            command = client.gets
+            logger.info("Executing: #{command}")
+            client.write `#{command}`
+            client.flush
+            client.close
+          rescue Errno::EAGAIN
+          end
         end
         tempfile.chmod(i += 1)
-        ret = IO.select([@socket], nil, nil, Config.timeout / 2) or next
+        ret = IO.select([@socket], nil, nil, Config.timeout / 2) || next
       end
     end
 

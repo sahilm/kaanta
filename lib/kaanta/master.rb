@@ -15,7 +15,8 @@ module Kaanta
       $stderr.sync = $stdout.sync = true
       setup_logging
       @socket = TCPServer.open(Config.host, Config.port)
-      logger.info("Accepting connections on #{Config.host}: #{Config.port}")
+      logger.info("Listening on #{Config.host}: #{Config.port}")
+      logger.info("Spawning #{Config.workers} workers")
       spawn_workers
       SIGNALS.each { |sig| trap_deferred(sig) }
       trap('CHLD') { @wpipe.write_nonblock(".") }
@@ -34,8 +35,8 @@ module Kaanta
           logger.error "master process in unknown mode: #{mode}"
         end
         reap_workers
-        ready = IO.select([@rpipe], nil, nil, 1) or next
-        ready.first && ready.first.first or next
+        ready = IO.select([@rpipe], nil, nil, 1) || next
+        ready.first && ready.first.first || next
         @rpipe.read_nonblock(1)
       end
       stop
@@ -45,22 +46,34 @@ module Kaanta
     private
 
     def stop
-
     end
 
     def reap_workers
       loop do
-        pid, status = Process.waitpid2(-1, Process::WNOHANG)
-        break unless pid
-        worker = @workers.delete(pid)
-        worker.tempfile.close rescue nil
-        logger.info "reaped worker #{worker.number} " \
-                    "(PID:#{pid})"
+        pid = Process.waitpid(-1, Process::WNOHANG) || break
+        reap_worker(pid)
       end
     rescue Errno::ECHILD
     end
 
+    def reap_worker(pid)
+      worker = @workers.delete(pid)
+      worker.tempfile.close rescue nil
+      logger.info "reaped worker #{worker.number} " \
+                  "(PID:#{pid})"
+    end
+
     def kill_runaway_workers
+      now = Time.now
+      @workers.each_pair do |pid, worker|
+        (now - worker.tempfile.ctime) <= Config.timeout && next
+        logger.error "worker #{worker.number} (PID:#{pid}) "\
+                     "has timed out"
+        begin
+          Process.kill('KILL', pid)
+        rescue Errno::ESRCH
+        end
+      end
     end
 
     def spawn_workers
