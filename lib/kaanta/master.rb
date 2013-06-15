@@ -1,7 +1,7 @@
 module Kaanta
 
   class Master
-    QUEUE_SIGS = %w(QUIT INT TERM HUP).map { |x| x.freeze }.freeze
+    SIGNALS = %w(QUIT INT TERM).map { |x| x.freeze }.freeze
 
     def initialize
       @rpipe, @wpipe  = IO.pipe
@@ -17,7 +17,7 @@ module Kaanta
       @socket = TCPServer.open(Config.host, Config.port)
       logger.info("Accepting connections on #{Config.host}: #{Config.port}")
       spawn_workers
-      QUEUE_SIGS.each { |sig| trap_deferred(sig) }
+      SIGNALS.each { |sig| trap_deferred(sig) }
       trap('CHLD') { @wpipe.write_nonblock(".") }
 
       loop do

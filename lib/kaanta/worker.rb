@@ -16,7 +16,7 @@ module Kaanta
 
     def start
       $PROGRAM_NAME = "kaanta worker #{number}"
-      Kaanta::Master::QUEUE_SIGS.each { |sig| trap(sig, 'IGNORE') }
+      Kaanta::Master::SIGNALS.each { |sig| trap(sig, 'IGNORE') }
       trap('CHLD', 'DEFAULT')
       alive = true
       %w(TERM INT).each { |sig| trap(sig) { exit(0) } }
