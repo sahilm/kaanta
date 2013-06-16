@@ -24,9 +24,9 @@ module Kaanta
         alive = false
         @socket.close rescue nil
       end
+      ret = nil
       i = 0
       logger.info("up")
-      ret = nil
       while alive && @master_pid == Process.ppid do
         tempfile.chmod(i += 1)
 

@@ -27,26 +27,17 @@ module Kaanta
         when nil
           kill_runaway_workers
           spawn_workers
-        when 'QUIT'
+        when 'QUIT', 'TERM', 'INT'
           break
-        when 'TERM', 'INT'
-          break
-        else
-          logger.error "master process in unknown mode: #{mode}"
         end
         reap_workers
         ready = IO.select([@rpipe], nil, nil, 1) || next
         ready.first && ready.first.first || next
         @rpipe.read_nonblock(1)
       end
-      stop
     end
-
 
     private
-
-    def stop
-    end
 
     def reap_workers
       loop do
@@ -84,13 +75,8 @@ module Kaanta
         tempfile.unlink
         tempfile.sync = true
         worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number,logger)
-        if pid = fork
-          @workers[pid] = worker
-        else
-          @wpipe.close
-          @rpipe.close
-          worker.start
-        end
+        pid = fork { worker.start }
+        @workers[pid] = worker
       end
     end
 
