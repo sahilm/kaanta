@@ -1,3 +1,4 @@
+Contains code from the Unicorn Server, Copyright (c) Eric Wong et al.
 Copyright (c) 2013 Sahil Muthoo
 
 MIT License
