@@ -6,13 +6,14 @@ Kaanta executes arbitrary code sent by clients and is of course not meant to be 
 
 ## Usage
 - `bundle install --path=.bundle`
-- `bin/kaanta` starts up the kaanta server on 0.0.0.0:8080
-- `echo "ls" | nc localhost 8080` will execute the ls command on any of the 3 spawned workers and return it's output to the client.
+- `bin/kaanta` starts up the kaanta server on `0.0.0.0:8080`
+- `echo "ls" | nc localhost 8080` will execute the `ls` command on any of the 3 spawned workers and return it's output to the client.
 - See `bin/kaanta --help` for options.
 
 ## License
 
 Contains code from the [Unicorn Server](http://unicorn.bogomips.org/ "Unicorn Server"), Copyright (c) Eric Wong et al.
+
 Copyright (c) 2013 Sahil Muthoo
 
 MIT License
