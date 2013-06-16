@@ -6,8 +6,6 @@ Most of the code has been gleaned from the [Unicorn Server](http://unicorn.bogom
 
 Kaanta executes arbitrary code sent by clients and is of course not meant to be used for anything important.
 
-
-
 Kaanta is Hindi for fork.
 
 ## Usage
