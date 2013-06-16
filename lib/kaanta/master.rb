@@ -30,6 +30,10 @@ module Kaanta
           kill_runaway_workers
           spawn_workers
         when 'QUIT', 'TERM', 'INT'
+          # we don't handle gracefully stopping workers
+          # to demonstrate that workers go down quickly
+          # after the master quits by tracking their
+          # Process.ppid.
           break
         when 'TTIN'
           Config.workers += 1
