@@ -40,7 +40,7 @@ module Kaanta
         when 'TTOU'
           unless Config.workers <= 0
             Config.workers -= 1
-            kill_worker('QUIT', @workers.keys.sort.max)
+            kill_worker('QUIT', @workers.keys.max)
           end
         end
         reap_workers
