@@ -1,7 +1,7 @@
 module Kaanta
 
   class Master
-    SIGNALS = %w(QUIT INT TERM).map { |x| x.freeze }.freeze
+    SIGNALS = %w(QUIT INT TERM TTIN TTOU).map { |x| x.freeze }.freeze
 
     def initialize
       @rpipe, @wpipe  = IO.pipe
@@ -29,6 +29,13 @@ module Kaanta
           spawn_workers
         when 'QUIT', 'TERM', 'INT'
           break
+        when 'TTIN'
+          Config.workers += 1
+        when 'TTOU'
+          unless Config.workers <= 0
+            Config.workers -= 1
+            kill_worker('QUIT', @workers.keys.sort.max)
+          end
         end
         reap_workers
         ready = IO.select([@rpipe], nil, nil, 1) || next
@@ -54,16 +61,19 @@ module Kaanta
                   "(PID:#{pid})"
     end
 
+
+    def kill_worker(signal, pid)
+      Process.kill(signal, pid)
+      rescue Errno::ESRCH
+    end
+
     def kill_runaway_workers
       now = Time.now
       @workers.each_pair do |pid, worker|
         (now - worker.tempfile.ctime) <= Config.timeout && next
         logger.error "worker #{worker.number} (PID:#{pid}) "\
                      "has timed out"
-        begin
-          Process.kill('KILL', pid)
-        rescue Errno::ESRCH
-        end
+        kill_worker('KILL', pid)
       end
     end
 

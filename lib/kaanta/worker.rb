@@ -42,7 +42,10 @@ module Kaanta
           end
         end
         tempfile.chmod(i += 1)
-        ret = IO.select([@socket], nil, nil, Config.timeout / 2) || next
+        ret = begin
+          IO.select([@socket], nil, nil, Config.timeout / 2) || next
+          rescue Errno::EBADF
+          end
       end
     end
 
