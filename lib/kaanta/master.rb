@@ -87,7 +87,12 @@ module Kaanta
         tempfile.unlink
         tempfile.sync = true
         worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number,logger)
-        pid = fork { worker.start }
+        pid = fork do
+          @wpipe.close
+          @rpipe.close
+          @workers.each_pair { |_, w| w.tempfile.close }
+          worker.start
+        end
         @workers[pid] = worker
       end
     end
