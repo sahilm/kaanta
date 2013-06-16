@@ -12,7 +12,9 @@ module Kaanta
     def start
       $PROGRAM_NAME = "kaanta master"
       @master_pid = Process.pid
-      $stderr.sync = $stdout.sync = true
+      unless Config.daemonize
+        $stderr.sync = $stdout.sync = true
+      end
       setup_logging
       @socket = TCPServer.open(Config.host, Config.port)
       logger.info("Listening on #{Config.host}: #{Config.port}")
@@ -105,7 +107,11 @@ module Kaanta
     end
 
     def logger
-      @logger ||= Logger.new(STDOUT)
+      if Config.daemonize
+        @logger ||= Logger.new("kaanta.log")
+      else
+        @logger ||= Logger.new(STDOUT)
+      end
     end
   end
 end

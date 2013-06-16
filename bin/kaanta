@@ -49,10 +49,12 @@ end
 opts.parse!(ARGV)
 
 if Kaanta::Config.daemonize
-  $stdin.reopen("/dev/null")
   exit if fork
   Process.setsid
   exit if fork
+  $stdin.reopen("/dev/null")
+  $stdout.reopen("/dev/null")
+  $stderr.reopen("/dev/null")
 end
 
 Kaanta::Master.new.start
