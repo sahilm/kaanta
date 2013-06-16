@@ -83,6 +83,13 @@ module Kaanta
       end
     end
 
+    def init_worker(worker)
+      @wpipe.close
+      @rpipe.close
+      @workers.each_pair { |_, w| w.tempfile.close }
+      worker.start
+    end
+
     def spawn_workers
       worker_number = -1
       until (worker_number += 1) == Config.workers
@@ -91,12 +98,7 @@ module Kaanta
         tempfile.unlink
         tempfile.sync = true
         worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number,logger)
-        pid = fork do
-          @wpipe.close
-          @rpipe.close
-          @workers.each_pair { |_, w| w.tempfile.close }
-          worker.start
-        end
+        pid = fork { init_worker(worker) }
         @workers[pid] = worker
       end
     end
