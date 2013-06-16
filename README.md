@@ -4,6 +4,8 @@ Kaanta is an educational Unix preforking server and is a part of my talk at [Rub
 
 Kaanta executes arbitrary code sent by clients and is of course not meant to be used for anything important.
 
+Kaanta is hindi for fork.
+
 ## Usage
 - `bundle install --path=.bundle`
 - `bin/kaanta` starts up the kaanta server on `0.0.0.0:8080`
