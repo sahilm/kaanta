@@ -54,17 +54,18 @@ module Kaanta
 
     def reap_workers
       loop do
-        pid = Process.waitpid(-1, Process::WNOHANG) || break
-        reap_worker(pid)
+        pid, status = Process.waitpid2(-1, Process::WNOHANG) || break
+        reap_worker(pid, status)
       end
     rescue Errno::ECHILD
     end
 
-    def reap_worker(pid)
+    def reap_worker(pid, status)
       worker = @workers.delete(pid)
       worker.tempfile.close rescue nil
       logger.info "reaped worker #{worker.number} " \
-                  "(PID:#{pid})"
+                  "(PID:#{pid}) " \
+                  "status: #{status.exitstatus}"
     end
 
 
