@@ -113,7 +113,7 @@ module Kaanta
     def setup_logging
       logger.datetime_format = "%Y-%m-%d %H:%M:%S"
       logger.formatter = proc do |severity, datetime, progname, msg|
-        "[#{$PROGRAM_NAME} (PID: #{Process.pid})] #{datetime}: #{severity} -- #{msg}\n"
+        "[#{$PROGRAM_NAME} (PID: #{Process.pid})] #{severity} -- #{msg}\n"
       end
     end
 
