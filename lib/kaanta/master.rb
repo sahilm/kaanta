@@ -1,3 +1,5 @@
+require 'socket'
+
 module Kaanta
 
   class Master
