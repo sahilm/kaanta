@@ -24,11 +24,11 @@ opts = OptionParser.new do |opts|
     Kaanta::Config.port = port
   }
 
- opts.on("-D", "--daemonize", "run daemonized in the background (default: false)") { |daemonize|
+ opts.on("-D", "--daemonize", "run daemonized in the background (default: false)") { |_|
     Kaanta::Config.daemonize = true
   }
 
-  opts.on("-w", "--workers COUNT", "Number of workers to spawn (default: 3)") { |count|
+  opts.on("-w", "--workers COUNT", "Number of workers to spawn (default: 3)") { |workers|
     Kaanta::Config.workers = workers.to_i
   }
 
