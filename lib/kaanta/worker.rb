@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 module Kaanta
   class Worker
     attr_reader :number, :tempfile
 
-    def initialize(master_pid, socket, tempfile, number,logger)
+    def initialize(master_pid, socket, tempfile, number, logger)
       @master_pid = master_pid
       @socket     = socket
       @tempfile   = tempfile
@@ -11,7 +13,7 @@ module Kaanta
     end
 
     def ==(other_number)
-      self.number == other_number
+      number == other_number
     end
 
     def start
@@ -19,15 +21,19 @@ module Kaanta
       Kaanta::Master::SIGNALS.each { |sig| trap(sig, 'IGNORE') }
       trap('CHLD', 'DEFAULT')
       alive = true
-      %w(TERM INT).each { |sig| trap(sig) { exit(0) } }
+      %w[TERM INT].each { |sig| trap(sig) { exit(0) } }
       trap('QUIT') do
         alive = false
-        @socket.close rescue nil
+        begin
+          @socket.close
+        rescue
+          nil
+        end
       end
       ret = nil
       i = 0
-      logger.info("up")
-      while alive && @master_pid == Process.ppid do
+      logger.info('up')
+      while alive && @master_pid == Process.ppid
         tempfile.chmod(i += 1)
 
         if ret
@@ -43,13 +49,14 @@ module Kaanta
         end
         tempfile.chmod(i += 1)
         ret = begin
-          IO.select([@socket], nil, nil, Config.timeout / 2) || next
+            IO.select([@socket], nil, nil, Config.timeout / 2) || next
           rescue Errno::EBADF
           end
       end
     end
 
     private
+
     attr_reader :logger
   end
 end

@@ -1,9 +1,10 @@
+# frozen_string_literal: true
+
 require 'socket'
 
 module Kaanta
-
   class Master
-    SIGNALS = %w(QUIT INT TERM TTIN TTOU).map { |x| x.freeze }.freeze
+    SIGNALS = %w[QUIT INT TERM TTIN TTOU].map(&:freeze).freeze
 
     def initialize
       @rpipe, @wpipe  = IO.pipe
@@ -12,18 +13,16 @@ module Kaanta
     end
 
     def start
-      $PROGRAM_NAME = "kaanta master"
+      $PROGRAM_NAME = 'kaanta master'
       @master_pid = Process.pid
-      unless Config.daemonize
-        $stderr.sync = $stdout.sync = true
-      end
+      $stderr.sync = $stdout.sync = true unless Config.daemonize
       setup_logging
       @socket = TCPServer.open(Config.host, Config.port)
       logger.info("Listening on #{Config.host}: #{Config.port}")
       logger.info("Spawning #{Config.workers} workers")
       spawn_workers
       SIGNALS.each { |sig| trap_deferred(sig) }
-      trap('CHLD') { @wpipe.write_nonblock(".") }
+      trap('CHLD') { @wpipe.write_nonblock('.') }
 
       loop do
         reap_workers
@@ -64,16 +63,19 @@ module Kaanta
 
     def reap_worker(pid, status)
       worker = @workers.delete(pid)
-      worker.tempfile.close rescue nil
+      begin
+        worker.tempfile.close
+      rescue
+        nil
+      end
       logger.info "reaped worker #{worker.number} " \
                   "(PID:#{pid}) " \
                   "status: #{status.exitstatus}"
     end
 
-
     def kill_worker(signal, pid)
       Process.kill(signal, pid)
-      rescue Errno::ESRCH
+    rescue Errno::ESRCH
     end
 
     def kill_runaway_workers
@@ -81,7 +83,7 @@ module Kaanta
       @workers.each_pair do |pid, worker|
         (now - worker.tempfile.ctime) <= Config.timeout && next
         logger.error "worker #{worker.number} (PID:#{pid}) "\
-                     "has timed out"
+                     'has timed out'
         kill_worker('KILL', pid)
       end
     end
@@ -100,7 +102,7 @@ module Kaanta
         tempfile = Tempfile.new('')
         tempfile.unlink
         tempfile.sync = true
-        worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number,logger)
+        worker = Kaanta::Worker.new(@master_pid, @socket, tempfile, worker_number, logger)
         pid = fork { init_worker(worker) }
         @workers[pid] = worker
       end
@@ -109,23 +111,23 @@ module Kaanta
     def trap_deferred(signal)
       trap(signal) do |_|
         @sig_queue << signal
-        @wpipe.write_nonblock(".")
+        @wpipe.write_nonblock('.')
       end
     end
 
     def setup_logging
-      logger.datetime_format = "%Y-%m-%d %H:%M:%S"
-      logger.formatter = proc do |severity, datetime, progname, msg|
+      logger.datetime_format = '%Y-%m-%d %H:%M:%S'
+      logger.formatter = proc do |severity, _datetime, _progname, msg|
         "[#{$PROGRAM_NAME} (PID: #{Process.pid})] #{severity} -- #{msg}\n"
       end
     end
 
     def logger
-      if Config.daemonize
-        @logger ||= Logger.new("kaanta.log")
-      else
-        @logger ||= Logger.new(STDOUT)
-      end
+      @logger ||= if Config.daemonize
+                    Logger.new('kaanta.log')
+                  else
+                    Logger.new(STDOUT)
+                  end
     end
   end
 end

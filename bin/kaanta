@@ -1,47 +1,49 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 require 'pathname'
-ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../../Gemfile",
-  Pathname.new(__FILE__).realpath)
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path('../../Gemfile',
+                                           Pathname.new(__FILE__).realpath)
 
 require 'bundler/setup'
 require 'optparse'
 require 'kaanta'
 
-Kaanta::Config.host = "0.0.0.0"
-Kaanta::Config.port = "8080"
+Kaanta::Config.host = '0.0.0.0'
+Kaanta::Config.port = '8080'
 Kaanta::Config.daemonize = false
 Kaanta::Config.workers = 3
 Kaanta::Config.timeout = 30
 
 opts = OptionParser.new do |opts|
-  opts.banner = "Usage: kaanta [options]"
+  opts.banner = 'Usage: kaanta [options]'
 
-  opts.on("-o", "--host HOST", "listen on HOST (default: 0.0.0.0)") { |host|
+  opts.on('-o', '--host HOST', 'listen on HOST (default: 0.0.0.0)') do |host|
     Kaanta::Config.host = host
-  }
+  end
 
-  opts.on("-p", "--port PORT", "use PORT (default: 8080)") { |port|
+  opts.on('-p', '--port PORT', 'use PORT (default: 8080)') do |port|
     Kaanta::Config.port = port
-  }
+  end
 
- opts.on("-D", "--daemonize", "run daemonized in the background (default: false)") { |_|
+  opts.on('-D', '--daemonize', 'run daemonized in the background (default: false)') do |_|
     Kaanta::Config.daemonize = true
-  }
+  end
 
-  opts.on("-w", "--workers COUNT", "Number of workers to spawn (default: 3)") { |workers|
+  opts.on('-w', '--workers COUNT', 'Number of workers to spawn (default: 3)') do |workers|
     Kaanta::Config.workers = workers.to_i
-  }
+  end
 
-  opts.on("-t", "--timeout SECONDS", "MAX SECONDS worker can spend processing a request before being reaped (default: 30)") { |timeout|
+  opts.on('-t', '--timeout SECONDS', 'MAX SECONDS worker can spend processing a request before being reaped (default: 30)') do |timeout|
     Kaanta::Config.timeout = timeout.to_i
-  }
+  end
 
-  opts.on_tail("-h", "--help", "Show this message") do
+  opts.on_tail('-h', '--help', 'Show this message') do
     puts opts
     abort
   end
 
-  opts.on_tail("-v", "--version", "Show version") do
+  opts.on_tail('-v', '--version', 'Show version') do
     puts Kaanta::VERSION
     exit
   end
@@ -52,9 +54,9 @@ if Kaanta::Config.daemonize
   exit if fork
   Process.setsid
   exit if fork
-  $stdin.reopen("/dev/null")
-  $stdout.reopen("/dev/null")
-  $stderr.reopen("/dev/null")
+  $stdin.reopen('/dev/null')
+  $stdout.reopen('/dev/null')
+  $stderr.reopen('/dev/null')
 end
 
 Kaanta::Master.new.start
